@@ -34,3 +34,6 @@ if __name__ == '__main__':
     parser.add_argument('Truth_events')
     parser.add_argument('measurement_table')
     parser.add_argument('--split_ratio', '-split', default=0.3, type=float)
+    args = parser.parse_args()
+
+    main(args.Truth_events, args.measurement_table, args.split_ratio)
