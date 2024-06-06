@@ -2,7 +2,7 @@ import argparse
 import os
 
 import pandas as pd
-import sklearn as sk
+from sklearn.model_selection import train_test_split
 
 
 def main(truth_table: str, measurements_table: str, split_ratio: float):
@@ -10,7 +10,7 @@ def main(truth_table: str, measurements_table: str, split_ratio: float):
     truth_table_pd = pd.read_parquet(truth_table)
     measurements_table_pd = pd.read_parquet(measurements_table)
 
-    truth_train, truth_val = sk.model_selection.train_test_split(
+    truth_train, truth_val = train_test_split(
         truth_table_pd,
         test_size=split_ratio,
         random_state=42,
