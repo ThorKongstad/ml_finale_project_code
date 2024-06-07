@@ -82,8 +82,9 @@ def make_dataloader(
 
 def panda_to_dataloader(
     db: pd.DataFrame,
+    truth_pd: pd.DataFrame,
     graph_definition: GraphDefinition,
-    pulsemaps: Union[str, List[str]],
+    #pulsemaps: Union[str, List[str]],
     features: List[str],
     truth: List[str],
     *,
@@ -92,7 +93,7 @@ def panda_to_dataloader(
     num_workers: int = 10,
     persistent_workers: bool = True,
     node_truth: Optional[str] = None,
-    truth_table: str = "truth",
+#    truth_table: str = "truth",
     node_truth_table: Optional[str] = None,
     string_selection: Optional[List[int]] = None,
     loss_weight_column: Optional[str] = None,
@@ -104,26 +105,30 @@ def panda_to_dataloader(
     # Reproducibility
     rng = np.random.default_rng(seed=seed)
     # Checks(s)
-    if isinstance(pulsemaps, str):
-        pulsemaps = [pulsemaps]
+    #if isinstance(pulsemaps, str):
+        #pulsemaps = [pulsemaps]
 
     # SAVE panda as sql
-    tempdir = tempfile.TemporaryDirectory(prefix='tmp_sqlites')
-    con = sqlite3.connect(sql_path:=f'{tempdir.name}/sql_{os.getpid()}.sqlite')
-    db.to_sql(f'sql_{os.getpid()}', con, if_exists='replace', index=False)
+#    tempdir = tempfile.TemporaryDirectory(prefix='tmp_sqlites')
+    #con = sqlite3.connect(sql_path:=f'{tempdir.name}/sql_{os.getpid()}.db')
+    con = sqlite3.connect(sql_path:=f'graph_sql_tmp.db')
+    db.to_sql(f'pulsemap', con, if_exists='replace', index=False)
+    truth_pd.to_sql('truth', con, if_exists='replace', index=False)
     con.close()
+
+    print('Lookk hereee:  ', os.path.exists(sql_path))
 
     # Create DataLoaders
     common_kwargs = dict(
         db=sql_path,
-        pulsemaps=pulsemaps,
+        pulsemaps=['pulsemap'],
         features=features,
         truth=truth,
         batch_size=batch_size,
         num_workers=num_workers,
         persistent_workers=persistent_workers,
         node_truth=node_truth,
-        truth_table=truth_table,
+        truth_table='truth',
         node_truth_table=node_truth_table,
         string_selection=string_selection,
         loss_weight_column=loss_weight_column,
