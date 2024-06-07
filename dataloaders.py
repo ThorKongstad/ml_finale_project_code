@@ -1,24 +1,23 @@
 import sqlite3
 import tempfile
-from collections import OrderedDict
+#from collections import OrderedDict
 import os
 from typing import Dict, List, Optional, Tuple, Union, Callable
 
 import numpy as np
 import pandas as pd
-from pytorch_lightning import Trainer
-from sklearn.model_selection import train_test_split
+#from pytorch_lightning import Trainer
+#from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader
-from torch_geometric.data import Batch, Data
+#from torch_geometric.data import Batch, Data
 
-from graphnet.data.dataset import Dataset
+#from graphnet.data.dataset import Dataset
 from graphnet.data.dataset import SQLiteDataset
-from graphnet.data.dataset import ParquetDataset
-from graphnet.models import Model
-from graphnet.utilities.logging import Logger
+#from graphnet.data.dataset import ParquetDataset
+#from graphnet.models import Model
+#from graphnet.utilities.logging import Logger
 from graphnet.models.graphs import GraphDefinition
 from graphnet.training.utils import collate_fn
-
 
 
 def make_dataloader(
@@ -139,6 +138,5 @@ def make_train_validation_dataloader(
         #selection=training_selection,
         **common_kwargs,  # type: ignore[arg-type]
     )
-
 
     return dataloader
