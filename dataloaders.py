@@ -80,7 +80,7 @@ def make_dataloader(
     return dataloader
 
 
-def make_train_validation_dataloader(
+def panda_to_dataloader(
     db: pd.DataFrame,
     graph_definition: GraphDefinition,
     pulsemaps: Union[str, List[str]],
