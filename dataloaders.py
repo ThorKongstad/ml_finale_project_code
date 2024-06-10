@@ -11,6 +11,10 @@ import pandas as pd
 from torch.utils.data import DataLoader
 #from torch_geometric.data import Batch, Data
 
+from sqlalchemy import types
+from sqlalchemy import create_engine
+#import sqlalchemy
+
 #from graphnet.data.dataset import Dataset
 from graphnet.data.dataset import SQLiteDataset
 #from graphnet.data.dataset import ParquetDataset
@@ -18,6 +22,12 @@ from graphnet.data.dataset import SQLiteDataset
 #from graphnet.utilities.logging import Logger
 from graphnet.models.graphs import GraphDefinition
 from graphnet.training.utils import collate_fn
+
+
+def convert_to_sqlType(obj):
+    if isinstance(obj,str): return types.String()
+    elif isinstance(obj, int): return types.Integer()
+    else: return types.Float()
 
 
 def make_dataloader(
@@ -109,14 +119,10 @@ def panda_to_dataloader(
         #pulsemaps = [pulsemaps]
 
     # SAVE panda as sql
-#    tempdir = tempfile.TemporaryDirectory(prefix='tmp_sqlites')
-    #con = sqlite3.connect(sql_path:=f'{tempdir.name}/sql_{os.getpid()}.db')
-    con = sqlite3.connect(sql_path:=f'graph_sql_tmp.db')
-    db.to_sql(f'pulsemap', con, if_exists='replace', index=False)
-    truth_pd.to_sql('truth', con, if_exists='replace', index=False)
-    con.close()
-
-    print('Lookk hereee:  ', os.path.exists(sql_path))
+    engine = create_engine('sqlite:///'+(sql_path:=f'graph_sql_tmp.db'), echo=False)
+    db.to_sql(f'pulsemap', engine, if_exists='replace', index=False, chunksize=15000, dtype={key: convert_to_sqlType(db.at[0, key]) for key in db.columns.to_list()})
+    truth_pd.to_sql('truth', engine, if_exists='replace', index=False, chunksize=15000, dtype={key: convert_to_sqlType(truth_pd.at[0, key]) for key in truth_pd.columns.to_list()})
+    engine.dispose()
 
     # Create DataLoaders
     common_kwargs = dict(

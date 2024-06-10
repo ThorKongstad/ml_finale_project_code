@@ -6,7 +6,7 @@ import sys
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent))
 
 from ml_finale_project_code.dataloaders import panda_to_dataloader
-from ml_finale_project_code.sim_detector_definition import app_ml_sim
+from ml_finale_project_code.sim_detector_definition import app_ml_sim, app_ml_sim_scalling
 
 import pandas as pd
 from pytorch_lightning.loggers import WandbLogger
@@ -28,9 +28,12 @@ from graphnet.utilities.logging import Logger
 
 
 
+
+
 def main(
-        Training_parquet_dir: str,
-        Truth_parquet_dir: str,
+        sql_path: str,
+        pulsemap: str,
+        truth_table: str,
         target: str,
         saved_model: Optional[str] = None,
         gpus: Optional[List[int]] = None,
@@ -42,17 +45,22 @@ def main(
 
     logger = Logger()
 
-    training_pd = pd.read_parquet(Training_parquet_dir)
-    truth_pd = pd.read_parquet(Truth_parquet_dir)
+    features = [
+        "dom_x",
+        "dom_y",
+        "dom_z",
+        "dom_time",
+        "charge",
+    ]
 
-#    truth_pd['pid'] = truth_pd['pid'].apply(int)
-#    print(truth_pd['pid'].apply(lambda x: isinstance(x,int)))
+    truths = ['L3_oscNext_bool', 'azimuth', 'elasticity', 'energy', 'energy_track', 'event_no', 'event_time', 'inelasticity', 'interaction_type', 'pid', 'position_x', 'position_y', 'position_z', 'sim_type', 'stopped_muon', 'track_length', 'zenith']
 
-    logger.info(f"features: {'; '.join(training_pd.columns)}")
-    logger.info(f"truth: {'; '.join(truth_pd.columns)}")
+    logger.info(f"features: {'; '.join(features)}")
+    logger.info(f"truth: {'; '.join(truths)}")
 
     config: Dict[str, Any] = {
-        "path": Training_parquet_dir,
+        "path": sql_path,
+        "pulsemap": pulsemap,
         "batch_size": batch_size,
         "num_workers": num_workers,
         "target": target,
@@ -63,13 +71,25 @@ def main(
         },
     }
 
-    graph_definition = KNNGraph(detector=app_ml_sim())
+    graph_definition = KNNGraph(detector=app_ml_sim_scalling    ())
+
+
 
     (
         training_dataloader,
-    ) = panda_to_dataloader(db=training_pd, truth_pd=truth_pd, graph_definition=graph_definition,
-                            features=training_pd.columns.to_list(), truth=truth_pd.columns.to_list(), batch_size=config["batch_size"],
-                            num_workers=config["num_workers"])
+        validation_dataloader,
+    ) = make_train_validation_dataloader(
+        db=config["path"],
+        graph_definition=graph_definition,
+        pulsemaps=config["pulsemap"],
+        features=features,
+        truth=truths,
+        batch_size=config["batch_size"],
+        num_workers=config["num_workers"],
+        truth_table=truth_table,
+        selection=None,
+    )
+
 
     # Building model
 
@@ -109,9 +129,10 @@ def main(
     # Training model
     model.fit(
         training_dataloader,
-#        validation_dataloader,
+        validation_dataloader,
         early_stopping_patience=config["early_stopping_patience"],
         logger= None,
+        num_sanity_val_steps=0,
         **config["fit"],
     )
 
@@ -124,9 +145,9 @@ def main(
 
 if __name__ == '__main__':
     parser = ArgumentParser()
-    parser.add_argument('Training_parquet_dir')
+    parser.add_argument('sql_path')
     #parser.add_argument('Validation_parquet_dir')
-    parser.add_argument('Truth_parquet_dir')
+#    parser.add_argument('Truth_parquet_dir')
     parser.add_argument('--saved_model', '-model', default=None, type=str)
     parser.add_argument(
         "--target",
@@ -143,6 +164,18 @@ if __name__ == '__main__':
         "early-stopping-patience",
         ("batch-size", 16),
         "num-workers",
+    )
+
+    parser.add_argument(
+        "--truth_table",
+        help="Name of truth table to be used (default: %(default)s)",
+        default="mc_truth",
+    )
+
+    parser.add_argument(
+        "--pulsemap",
+        help="Name of pulsemap to use (default: %(default)s)",
+        default="total",
     )
 
     args, unknown = parser.parse_known_args()
