@@ -3,6 +3,7 @@ import tempfile
 #from collections import OrderedDict
 import os
 from typing import Dict, List, Optional, Tuple, Union, Callable
+from copy import deepcopy
 
 import numpy as np
 import pandas as pd
@@ -22,6 +23,33 @@ from graphnet.data.dataset import SQLiteDataset
 #from graphnet.utilities.logging import Logger
 from graphnet.models.graphs import GraphDefinition
 from graphnet.training.utils import collate_fn
+
+from torch_geometric.data import Data
+
+
+class saving_graph_datasets(SQLiteDataset):
+    def _post_init(self):
+        super()._post_init()
+        self._graphs_saved = [None]*len(self)
+
+
+    def __getitem__(self, sequential_index: int) -> Data:
+        """Return graph `Data` object at `index`."""
+        if not (0 <= sequential_index < len(self)):
+            raise IndexError(
+                f"Index {sequential_index} not in range [0, {len(self) - 1}]"
+            )
+
+        if self._graphs_saved[sequential_index] is None:
+            features, truth, node_truth, loss_weight = self._query(
+                sequential_index
+            )
+            graph = self._create_graph(features, truth, node_truth, loss_weight)
+            self._graphs_saved[sequential_index] = deepcopy(graph)
+
+        else:
+            graph = self._graphs_saved[sequential_index]
+        return graph
 
 
 def convert_to_sqlType(obj):

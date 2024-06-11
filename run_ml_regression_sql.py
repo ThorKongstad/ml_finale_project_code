@@ -5,7 +5,7 @@ import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent))
 
-from ml_finale_project_code.dataloaders import panda_to_dataloader
+#from ml_finale_project_code.dataloaders import panda_to_dataloader
 from ml_finale_project_code.sim_detector_definition import app_ml_sim, app_ml_sim_scalling
 
 import pandas as pd
@@ -25,9 +25,6 @@ from graphnet.training.loss_functions import LogCoshLoss
 from graphnet.training.utils import make_train_validation_dataloader
 from graphnet.utilities.argparse import ArgumentParser
 from graphnet.utilities.logging import Logger
-
-
-
 
 
 def main(
@@ -71,9 +68,7 @@ def main(
         },
     }
 
-    graph_definition = KNNGraph(detector=app_ml_sim_scalling    ())
-
-
+    graph_definition = KNNGraph(detector=app_ml_sim_scalling())
 
     (
         training_dataloader,
